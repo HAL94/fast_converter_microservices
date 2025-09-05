@@ -1,0 +1,66 @@
+.venv
+.git
+.gitignore
+.gitattribtes
+
+docker-compose.yml
+Dockerfile.dev
+Dockerfile
+
+# Python specific ignores
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+.Python
+.venv/             # Your virtual environment directory
+venv/              # Common alternative name for virtual environment
+env/               # Another common alternative name for virtual environment
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/              # Tox test automation
+.pytest_cache/     # Pytest cache
+*.egg-info/        # Python package metadata (if not installing your project)
+.coverage
+.mypy_cache/       # MyPy type checking cache
+.ruff_cache/       # Ruff linter cache (if you use it)
+
+# Git and version control
+.git/              # The entire Git repository history
+.gitignore
+.gitattributes
+
+# IDE and Editor specific files
+.vscode/           # VS Code settings
+.idea/             # IntelliJ/PyCharm settings
+*.sublime-project
+*.sublime-workspace
+.DS_Store          # macOS specific metadata files
+Thumbs.db          # Windows thumbnail cache
+
+# Docker specific files (usually not needed inside the image)
+Dockerfile* # Your Dockerfile itself (or Dockerfile.dev)
+docker-compose.yml
+docker-compose.*.yml
+
+# Environment files (important for security)
+.env               # Your local environment variables with secrets
+*.env
+.env.*
+
+# Logs and temporary files
+*.log
+*.tmp
+tmp/
+temp/
+
+# Build artifacts (if not explicitly needed in the final image)
+# If you have a separate build step that generates a dist/ or build/ folder
+# which you then copy in, you might exclude these during the initial context.
+dist/
+build/
+*.egg
+
+# Any specific data directories you manage with volumes
+# For example, if you have a local `data` directory that you mount:
+# data/

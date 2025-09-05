@@ -1,0 +1,66 @@
+services:
+  fc.service.auth:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      args:
+        - PACKAGE=auth
+    volumes:
+    - ./services/auth/src:/app/services/auth/src
+    - /app/.venv
+    # command: "uv run -m services.auth.src"
+    container_name: fc.service.auth
+    ports:
+      - "${AUTH_SERVICE_PORT}:8000"
+    env_file:
+      - ./services/auth/.env
+    networks:
+      - fc_network
+    restart: no
+    depends_on:
+      fc.service.auth_db:
+        condition: service_healthy
+
+  fc.service.gateway:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      args:
+        - PACKAGE=gateway
+    # command: "uv run -m services.gateway.src"
+    container_name: fc.service.gateway
+    ports:
+      - "${GATEWAY_SERVICE_PORT}:8000"
+    env_file:
+      - ./services/gateway/.env
+    networks:
+      - fc_network
+    restart: no
+
+  fc.service.auth_db:
+    image: postgres:17.4-alpine3.21
+    container_name: fc.service.auth_db
+    environment:
+      POSTGRES_DB: ${AUTH_PG_DB}
+      POSTGRES_USER: ${AUTH_PG_USER}
+      POSTGRES_PASSWORD: ${AUTH_PG_PW}
+      POSTGRES_PORT: ${AUTH_PG_PORT}
+    ports:
+      - "${AUTH_PG_PORT:-5433}:5433"
+    networks:
+      - fc_network
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    # This volume stores PostgreSQL data outside of the container filesystem,
+    # preserving data between container restarts or recreations
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+
+networks:
+  fc_network:
+    driver: bridge
