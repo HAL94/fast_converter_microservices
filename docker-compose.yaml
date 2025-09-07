@@ -1,4 +1,16 @@
 services:
+  rabbitmq:
+    image: rabbitmq:3-management # Uses the image with the management UI    
+    ports:
+      - "5672:5672" # Standard AMQP port
+      - "15672:15672" # Management UI port
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbit
+      RABBITMQ_DEFAULT_PASS: rabbit 
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq # Persist RabbitMQ data
+      - rabbitmq_logs:/var/log/rabbitmq # Persist RabbitMQ logs
+
   fc.service.auth:
     build:
       context: ./
@@ -6,12 +18,11 @@ services:
       args:
         - PACKAGE=auth
     volumes:
-    - ./services/auth/src:/app/services/auth/src
-    - /app/.venv
-    # command: "uv run -m services.auth.src"
+      - ./services/auth/src:/app/services/auth/src
+      - /app/.venv
     container_name: fc.service.auth
     ports:
-      - "${AUTH_SERVICE_PORT}:8000"
+      - "${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
     env_file:
       - ./services/auth/.env
     networks:
@@ -27,10 +38,12 @@ services:
       dockerfile: ./Dockerfile
       args:
         - PACKAGE=gateway
-    # command: "uv run -m services.gateway.src"
     container_name: fc.service.gateway
+    volumes:
+      - ./services/gateway/src:/app/services/gateway/src
+      - /app/.venv
     ports:
-      - "${GATEWAY_SERVICE_PORT}:8000"
+      - "${GATEWAY_SERVICE_PORT}:${GATEWAY_SERVICE_PORT}"
     env_file:
       - ./services/gateway/.env
     networks:
@@ -60,6 +73,12 @@ services:
     # preserving data between container restarts or recreations
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
+
+volumes:
+  rabbitmq_data:
+    driver: local
+  rabbitmq_logs:
+    driver: local
 
 networks:
   fc_network:

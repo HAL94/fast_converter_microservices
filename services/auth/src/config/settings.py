@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class AppConfigSettings(BaseSettings):
     ENV: str = "prod"
-    APP_PORT: int = 8000
+    APP_PORT: int = 9090
     HOST: str = "localhost"
 
 class PostgresSettings(BaseSettings):

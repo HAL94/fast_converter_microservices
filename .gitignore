@@ -11,3 +11,5 @@ wheels/
 .env
 postgres_data
 minio_data
+rabbitmq_data
+rabbitmq_logs
