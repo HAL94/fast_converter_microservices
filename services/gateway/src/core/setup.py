@@ -3,6 +3,7 @@ from typing import Any, AsyncGenerator, Self
 from fastapi import FastAPI
 from src.core.config import AppSettings, settings
 from src.api import root
+from shared.rabbitmq.client import RabbitmqClient
 
 
 class FastApp(FastAPI):
@@ -15,7 +16,14 @@ class FastApp(FastAPI):
 
     @asynccontextmanager
     async def _lifespan(self, _: Self, /) -> AsyncGenerator[None, Any]:
+        base_rabbitmq_url = f"amqp://{settings.RABBITMQ_HOST}:{settings.RABBITMQ_PORT}/"
+        await RabbitmqClient.connect(
+            url=base_rabbitmq_url,
+            username=settings.RABBITMQ_USERNAME,
+            password=settings.RABBITMQ_PASSWORD,
+        )
         yield
+        await RabbitmqClient.close()
 
     def _setup_middlewares(self) -> None:
         pass

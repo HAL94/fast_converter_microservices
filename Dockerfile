@@ -31,8 +31,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM dependencies AS base
 
-ARG SERVICE_COMMAND
-
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --package=$PACKAGE
 
