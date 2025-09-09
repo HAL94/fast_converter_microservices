@@ -1,52 +1,14 @@
-from abc import ABC, abstractmethod
-from typing import Any, Coroutine
 import aio_pika
-from aio_pika.abc import AbstractRobustQueue, AbstractRobustExchange
+from aio_pika.abc import AbstractRobustQueue
 from aiormq.abc import ConfirmationFrameType
 
-from .base import RabbitmqBase
-
-
-class RabbitmqProducerBase(ABC, RabbitmqBase):
-    @abstractmethod
-    def publish(self, exchange: str, routing_key: str, body: str | bytes) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def init_producer(self) -> Coroutine[Any, Any, Any]:
-        raise NotImplementedError()
-
-
-class RabbitmqDirectProducer(RabbitmqProducerBase):
-    def __init__(self, exchange_name: str):
-        super().__init__()
-        self.exchange_name = exchange_name
-    
-    async def init_producer(self):
-        try:
-            await self.declare_exchange()
-        except Exception as e:
-            raise e
-
-    async def declare_exchange(self, durable=True) -> AbstractRobustExchange:
-        self.exchange = await self.channel.declare_exchange(
-            name=self.exchange_name, type=aio_pika.ExchangeType.DIRECT, durable=durable
-        )
-        return self.exchange
-
-    async def publish(
-        self, routing_key: str, body: str
-    ) -> ConfirmationFrameType | None:
-        if not self.exchange:
-            raise ValueError("Exchange was not declared")
-        message = aio_pika.Message(body=body.encode("utf-8"))
-        return await self.exchange.publish(message=message, routing_key=routing_key)
-
+from .base import RabbitmqProducerBase
+from .types import ExchangeConfig, QueueConfig
 
 class RabbitmqBasicProducer(RabbitmqProducerBase):
-    def __init__(self, queue_name: str):
+    def __init__(self, queue_config: QueueConfig):
         super().__init__()
-        self.queue_name = queue_name
+        self.queue_config = queue_config
 
     async def init_producer(self):
         try:
@@ -55,12 +17,34 @@ class RabbitmqBasicProducer(RabbitmqProducerBase):
             print(f"Failed to init producer: {e}")
             raise e
 
-    async def declare_queue(self, durable: bool = True) -> AbstractRobustQueue:
-        self.queue = await self.channel.declare_queue(name=self.queue_name, durable=durable)
+    async def declare_queue(self) -> AbstractRobustQueue:
+        self.queue = await self.channel.declare_queue(
+            name=self.queue_config.name, durable=self.queue_config.durable
+        )
         return self.queue
 
     async def publish(self, body: str) -> ConfirmationFrameType | None:
         message = aio_pika.Message(body=body.encode("utf-8"))
         return await self.channel.default_exchange.publish(
-            message=message, routing_key=self.queue.name
+            message=message, routing_key=self.queue_config.name
         )
+
+class RabbitmqExchangeProducer(RabbitmqProducerBase):
+    def __init__(self, exchange_config: ExchangeConfig):
+        super().__init__()
+        self.exchange_config = exchange_config
+        self.exchange = None
+
+    async def init_producer(self):
+        self.exchange = await self.channel.declare_exchange(
+            name=self.exchange_config.name,
+            type=self.exchange_config.exchange_type,
+            durable=self.exchange_config.durable,
+        )
+
+    async def publish(self, body: str, routing_key: str = "", **kwargs):
+        if not self.exchange:
+            raise ValueError("[RabbitmqExchangeProducer]: Exchange was not declared")
+        message = aio_pika.Message(body=body.encode("utf-8")) 
+        # routing_key should be ignored in the case of 'fanout'
+        return await self.exchange.publish(message=message, routing_key=routing_key)

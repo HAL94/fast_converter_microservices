@@ -1,7 +1,8 @@
 import asyncio
 
+from shared.constants import RECEIVER_CONFIGS, ExchangeNames
 from shared.rabbitmq.client import RabbitmqClient
-from shared.rabbitmq.receiver import RabbitmqBasicReceiver
+from shared.rabbitmq.receiver import RabbitmqExchangeReceiver
 from shared.rabbitmq import IncomingMessage
 
 
@@ -15,19 +16,23 @@ async def connect_rabbit():
         print(f"Failed to connect to RabbitMQ: {e}")
         raise e
 
+
 async def setup_basic_receiver():
     try:
-        basic_receiver = RabbitmqBasicReceiver(queue_name="upload_file")
+        receiver_config = RECEIVER_CONFIGS.get(ExchangeNames.VIDEO_UPLOAD)
+        basic_receiver = RabbitmqExchangeReceiver(config=receiver_config)
         await basic_receiver.init_receiver()
+
         async def callback(message: IncomingMessage):
             async with message.process() as process:
-                message_body = process.body.decode('utf-8')
+                message_body = process.body.decode("utf-8")
                 print(f" [x]: Received message from Gateway: {message_body}")
-                
+
         await basic_receiver.consume(callback=callback)
     except Exception as e:
         print(f"Failed to process: {e}")
         raise e
+
 
 async def main():
     try:
@@ -37,6 +42,7 @@ async def main():
         await asyncio.Future()
     finally:
         await RabbitmqClient.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

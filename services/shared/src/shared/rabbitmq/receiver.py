@@ -1,31 +1,15 @@
-import aio_pika
-from abc import ABC, abstractmethod
 import asyncio
-from typing import Any, Awaitable, Callable, Coroutine, TypeAlias, Union
-from aiormq import spec
-
-from .base import RabbitmqBase
-
-OnMessageCallback: TypeAlias = Callable[[aio_pika.IncomingMessage], Awaitable[Any]]
+from typing import Optional
 
 
-class RabbitmqReceiverBase(ABC, RabbitmqBase):
-    @abstractmethod
-    def consume(
-        self,
-        no_ack: bool,
-        callback: OnMessageCallback,
-    ) -> None:
-        raise NotImplementedError()
+from shared.rabbitmq.types import ExchangeReceiverConfig, QueueConfig
+from .base import OnMessageCallback, RabbitmqReceiverBase
 
-    @abstractmethod
-    async def init_receiver(self) -> Coroutine[Any, Any, Any]:
-        raise NotImplementedError()
-    
+
 class RabbitmqBasicReceiver(RabbitmqReceiverBase):
-    def __init__(self, queue_name: str):
+    def __init__(self, queue_config: QueueConfig):
         super().__init__()
-        self.queue_name = queue_name
+        self.queue_config = queue_config
 
     async def init_receiver(self):
         try:
@@ -34,9 +18,10 @@ class RabbitmqBasicReceiver(RabbitmqReceiverBase):
             print(f"Failed to init receiver: {e}")
             raise e
 
-    async def declare_queue(self, durable: bool = True):
+    async def declare_queue(self, durable: Optional[bool] = None):
         self.queue = await self.channel.declare_queue(
-            name=self.queue_name, durable=durable
+            name=self.queue_config.name,
+            durable=durable if durable is not None else self.queue_config.durable,
         )
         return self.queue
 
@@ -45,41 +30,35 @@ class RabbitmqBasicReceiver(RabbitmqReceiverBase):
 
     async def consume(self, callback: OnMessageCallback, no_ack: bool = False) -> None:
         if not self.queue:
-            raise ValueError("Queue was not declared")
+            raise ValueError("[RabbitmqBasicReceiver]: Queue was not declared")
         await self.queue.consume(callback=callback, no_ack=no_ack)
 
 
-class RabbitmqDirectReceiver(RabbitmqReceiverBase):
-    def __init__(self, exchange_name: str, binding_keys: Union[str | list[str]]):
+class RabbitmqExchangeReceiver(RabbitmqReceiverBase):
+    def __init__(self, config: ExchangeReceiverConfig):
         super().__init__()
-        self.exchange_name = exchange_name
-        self.binding_keys = binding_keys
+        self.exchange_config = config.exchange_config
+        self.exchange = None
+        self.queue_config = config.queue_config
+        self.binding_keys = config.binding_keys
 
     async def init_receiver(self):
-        try:
-            await self.declare_exchange()
-            await self.declare_queue()
-            await self.bind_queue()
-        except Exception as e:
-            raise e
-            
-
-    async def declare_queue(self, exclusive: bool = True):
-        self.queue = await self.channel.declare_queue(name="", exclusive=exclusive)        
-        return self.queue
-        
-
-    async def declare_exchange(self, durable: bool = True):
         self.exchange = await self.channel.declare_exchange(
-            name=self.exchange_name, type=aio_pika.ExchangeType.DIRECT, durable=durable
+            name=self.exchange_config.name,
+            type=self.exchange_config.exchange_type,
+            durable=self.exchange_config.durable,
         )
-        return self.exchange
 
-    async def bind_queue(
-        self
-    ) -> spec.Queue.BindOk | list[spec.Queue.BindOk]:
+        if not self.exchange:
+            raise ValueError("[RabbitmqExchangeReceiver]: Failed to declare exchange")
+
+        self.queue = await self.channel.declare_queue(
+            name=self.queue_config.name,
+            exclusive=self.queue_config.exclusive,
+        )
+
         if not self.queue:
-            raise ValueError("Queue was not declared")
+            raise ValueError("[RabbitmqExchangeReceiver]: Failed to declare queue")
 
         if isinstance(self.binding_keys, str):
             return await self.queue.bind(
@@ -94,11 +73,14 @@ class RabbitmqDirectReceiver(RabbitmqReceiverBase):
                     routing_key=key,
                 )
             )
+        return await asyncio.gather(binding_tasks)
 
-        return await asyncio.gather(*binding_tasks)
+    async def set_qos(self, prefetch_count: int):
+        return await self.channel.set_qos(prefetch_count=prefetch_count)
 
-    async def consume(self, callback: OnMessageCallback, no_ack: bool = False) -> str:
+    async def consume(self, callback, no_ack=False) -> str:
         if not self.queue:
-            raise ValueError("Queue was not declared")
-
-        return await self.queue.consume(callback=callback, no_ack=no_ack)        
+            raise ValueError(
+                "[RabbitmqExchangeReceiver]: Queue was not declared. Make sure to call init_receiver"
+            )
+        return await self.queue.consume(callback=callback, no_ack=no_ack)
