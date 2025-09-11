@@ -71,6 +71,8 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      fc.service.file_db:
+        condition: service_healthy
 
   fc.service.video_to_mp3:
     build:
@@ -102,6 +104,26 @@ services:
       - "${AUTH_PG_PORT:-5433}:5433"
     networks:
       - fc_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./postgres_data/auth_db:/var/lib/postgresql/data
+
+  fc.service.file_db:
+    image: postgres:17.4-alpine3.21
+    container_name: fc.service.file_db
+    environment:
+      POSTGRES_DB: ${FILE_PG_DB}
+      POSTGRES_USER: ${FILE_PG_USER}
+      POSTGRES_PASSWORD: ${FILE_PG_PW}
+      POSTGRES_PORT: ${FILE_PG_PORT}
+    ports:
+      - "${FILE_PG_PORT:-5434}:5434"
+    networks:
+      - fc_network
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]
@@ -112,7 +134,7 @@ services:
     # This volume stores PostgreSQL data outside of the container filesystem,
     # preserving data between container restarts or recreations
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      - ./postgres_data/file_db:/var/lib/postgresql/data
 
 volumes:
   rabbitmq_data:

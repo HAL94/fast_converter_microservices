@@ -22,7 +22,7 @@ class AuthServiceClient:
     async def validate_jwt(self, data: str):
         async with AsyncClient(base_url=self.base_url) as client:
             headers = Headers(headers={"Authorization": f"Bearer {data}"})
-            api_response = await client.post("/auth/validate", headers=headers)
+            api_response = await client.post("/auth/validate", headers=headers)            
             return api_response
 
 

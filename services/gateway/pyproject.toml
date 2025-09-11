@@ -12,6 +12,8 @@ dependencies = [
     "uvicorn>=0.35.0",
     "shared",
     "aio-pika>=9.5.7",
+    "minio>=7.2.16",
+    "python-multipart>=0.0.20",
 ]
 
 [tool.uv.sources]

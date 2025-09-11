@@ -6,7 +6,7 @@ def get_auth_client():
     return AuthServiceClient()
 
 
-async def validate_jwt(request: Request):
+async def validate_jwt(request: Request, get_payload: bool = True):
     client_auth = AuthServiceClient()
     UNAUTH_EXCPETION = HTTPException(status_code=401, detail="Unauthorized")
 
@@ -25,4 +25,6 @@ async def validate_jwt(request: Request):
     if api_response.status_code == 401:
         raise UNAUTH_EXCPETION
     
+    if get_payload:
+        return api_response.json()
     

@@ -6,6 +6,10 @@ ENV PYTHONUNBUFFERED=1
 
 COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
 
+RUN if [ "$PACKAGE" = "video_to_mp3" ] || [ "$PACKAGE" = "gateway" ]; then \
+    apk add --no-cache ffmpeg; \
+    fi
+
 # UV copies the package files from the cache into the virtual environment. 
 # This uses more disk space but ensures full independence of the virtual environment from the cache.
 ENV UV_LINK_MODE=copy
