@@ -4,14 +4,16 @@ import tempfile
 
 from sqlalchemy import URL
 
-from shared.constants import RECEIVER_CONFIGS, ExchangeNames
+from shared.constants import ProducerConfigs, ReceiverConfigs
 from shared.file_database.models import FileType
 from shared.rabbitmq.client import RabbitmqClient
-from shared.rabbitmq.receiver import RabbitmqExchangeReceiver
+from shared.rabbitmq.helpers import create_exchange_producer, create_exchange_receiver
 from shared.rabbitmq import IncomingMessage
-from shared.database import SessionManager, Base
+from shared.database import Base
+from shared.database.session import create_session_manager
 from shared.file_database.entities import File
 from shared.minio_client import MinioClient, create_config, create_client
+from shared.rabbitmq.producer import RabbitmqExchangeProducer
 from .config import settings
 from moviepy import VideoFileClip
 
@@ -31,7 +33,26 @@ DATABASE_URL = URL.create(
     database=settings.FILE_PG_DB,
 )
 
-session_manager = SessionManager(DATABASE_URL)
+session_manager = create_session_manager(DATABASE_URL)
+client: MinioClient
+producer: RabbitmqExchangeProducer | None = None
+
+
+async def setup_exchange_producer():
+    global producer
+    producer = await create_exchange_producer(ProducerConfigs.ConvertCompleted)
+    await producer.init_producer()
+
+
+async def emit_convert_complete_event(uuid: str):
+    if not producer:
+        print("Producer for ConversionComplete event is None")
+        return
+
+    is_confirmed = await producer.publish(body=uuid)
+
+    if is_confirmed.delivery_tag:
+        print("[ConversionService]: successfully published the conversion event")
 
 
 def setup_minio_client():
@@ -42,9 +63,6 @@ def setup_minio_client():
     if client.ensure_connect():
         print("[Video_to_mp3]: Minio client created")
     return client
-
-
-client: MinioClient
 
 
 async def connect_database():
@@ -61,25 +79,29 @@ async def get_video_by_uuid(uuid: str) -> str | None:
         print(f"Found video name: {found.name}")
         convert_result = convert_video_to_audio(found.name)
         if convert_result.success:
-            await File.create(
-                session,
-                File(
-                    name=convert_result.audio_name,
-                    user_id=found.user_id,
-                    original_file_id=found.id,
-                    file_type=FileType.AUDIO,
-                ),
+            audio_found = await File.get_one(
+                session, convert_result.audio_name, field=File.model.name
             )
+            if not audio_found:
+                audio_found = await File.create(
+                    session,
+                    File(
+                        name=convert_result.audio_name,
+                        user_id=found.user_id,
+                        original_file_id=found.id,
+                        file_type=FileType.AUDIO,
+                    ),
+                )
+            await emit_convert_complete_event(uuid=audio_found.uuid)
+
         return found.name
 
 
 def convert_video_to_audio(filename: str):
     audio_ext = "mp3"
-    retrieved_file = client.client.get_object(
-        bucket_name="videos", object_name=filename
-    )
+    retrieved_file = client.get_object(bucket_name="videos", object_name=filename)
 
-    if retrieved_file.status != 200:
+    if not retrieved_file or retrieved_file.status != 200:
         raise ValueError(f"Failed retrieving file: {filename}")
 
     filename_without_ext = filename.split(".")[0]
@@ -120,11 +142,9 @@ async def connect_rabbit():
         raise e
 
 
-async def setup_basic_receiver():
+async def setup_exchange_receiver():
     try:
-        receiver_config = RECEIVER_CONFIGS.get(ExchangeNames.VIDEO_UPLOAD)
-        basic_receiver = RabbitmqExchangeReceiver(config=receiver_config)
-        await basic_receiver.init_receiver()
+        receiver = await create_exchange_receiver(ReceiverConfigs.VideoUpload)
 
         async def callback(message: IncomingMessage):
             async with message.process() as process:
@@ -132,7 +152,7 @@ async def setup_basic_receiver():
                 print(f" [x]: Received message from Gateway: {uuid}")
                 await get_video_by_uuid(uuid)
 
-        await basic_receiver.consume(callback=callback)
+        await receiver.consume(callback=callback)
     except Exception as e:
         print(f"Failed to process: {e}")
         raise e
@@ -144,7 +164,8 @@ async def main():
         client = setup_minio_client()
         await connect_database()
         await connect_rabbit()
-        await setup_basic_receiver()
+        await setup_exchange_producer()
+        await setup_exchange_receiver()
         print("Conversion Service is running")
         await asyncio.Future()
     finally:

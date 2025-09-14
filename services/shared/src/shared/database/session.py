@@ -46,14 +46,5 @@ class SessionManager:
         finally:
             await session.close()
 
-
-# file_session_manager = FileDbSessionManager(
-#     DATABASE_URL,
-#     kwargs={
-#         "echo": False,
-#     },
-# )
-
-# async def get_filedb_async_session():
-#     async with file_session_manager.session() as session:
-#         yield session
+def create_session_manager(url: URL):
+    return SessionManager(url)

@@ -1,7 +1,7 @@
 import enum
 from uuid import uuid4
 from sqlalchemy import VARCHAR, ForeignKey
-from sqlalchemy.orm import Mapped, relationship, mapped_column
+from sqlalchemy.orm import Mapped, relationship, mapped_column, selectinload
 from shared.database import Base
 
 
@@ -12,6 +12,7 @@ class FileType(enum.StrEnum):
 
 class File(Base):
     __tablename__ = "files"
+
     id: Mapped[int] = mapped_column("id", autoincrement=True, primary_key=True)
     name: Mapped[str] = mapped_column(VARCHAR(255), unique=True)
     uuid: Mapped[str] = mapped_column(default=lambda: str(uuid4()), unique=True)
@@ -30,3 +31,6 @@ class File(Base):
     converted_file: Mapped["File"] = relationship(
         back_populates="original_file", single_parent=True
     )
+    @staticmethod
+    def get_select_in_load():
+        return [selectinload(File.converted_file), selectinload(File.original_file)]

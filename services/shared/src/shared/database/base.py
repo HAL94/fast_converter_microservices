@@ -129,3 +129,24 @@ class Base(DeclarativeBase):
         result = await session.scalar(statement)
 
         return result
+
+    @classmethod
+    async def get_all(
+        cls,
+        session: AsyncSession,
+        /,
+        *,
+        where_clause: list[ColumnElement[bool]] = None
+    ):
+        options = cls.get_options()
+        where_base = []
+        if where_clause:
+            where_base.extend(where_clause)
+
+        stmt: Select = select(cls).where(*where_base)
+
+        if options:
+            stmt = stmt.options(*options)
+        
+        result = await session.scalars(stmt)
+        return result

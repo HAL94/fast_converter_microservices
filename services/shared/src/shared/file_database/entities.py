@@ -13,7 +13,5 @@ class File(BaseModelDatabaseMixin):
     uuid: Optional[str] = None
     file_type: FileType
     user_id: int
-    original_file_id: Optional[int] = None
-    # original_file: Optional["File"] = None
-    # converted_file: Optional["File"] = None
+    original_file: Optional["File"] = None
 

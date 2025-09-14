@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import BinaryIO
 from minio import Minio
 
@@ -19,6 +20,26 @@ class MinioClient:
             secret_key=password,  # Replace with your secret key
             secure=False,  # Set to True for HTTPS
         )
+
+    def get_presigned_url(self, bucket_name: str, file_name: str):
+        try:
+            url = self.client.get_presigned_url(
+                method="GET",
+                bucket_name=bucket_name,
+                object_name=file_name,
+                expires=timedelta(hours=1),
+                response_headers={
+                    "Content-Disposition": f'attachment; filename="{file_name}"'
+                },
+                
+                
+            )
+            return url
+        except Exception as e:
+            print(
+                f"Failed to create pre-signed url for {bucket_name} and {file_name}: \n {e}"
+            )
+            raise e
 
     def ensure_connect(self):
         try:
@@ -42,6 +63,17 @@ class MinioClient:
         else:
             print("Bucket", bucket_name, "already exists")
             return False
+
+    def get_object(self, bucket_name: str, object_name: str, **kwargs):
+        if not self.client:
+            raise ValueError("Client not initialized")
+        try:
+            return self.client.get_object(
+                bucket_name=bucket_name, object_name=object_name, **kwargs
+            )
+        except Exception as e:
+            print(f"Failed to upload data: {e}")
+            return None
 
     def put_object(
         self, bucket_name: str, object_name: str, data: BinaryIO, length: int, **kwargs
@@ -76,10 +108,10 @@ class MinioClient:
         except Exception as e:
             print(f"Failed to upload data: {e}")
 
+
 def create_config(host: str, username: str, password: str):
     return MinioConfig(host=host, username=username, password=password)
 
+
 def create_client(config: MinioConfig):
     return MinioClient(config.host, config.username, config.password)
-
-

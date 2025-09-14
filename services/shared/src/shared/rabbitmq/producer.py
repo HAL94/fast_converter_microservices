@@ -3,7 +3,7 @@ from aio_pika.abc import AbstractRobustQueue
 from aiormq.abc import ConfirmationFrameType
 
 from .base import RabbitmqProducerBase
-from .types import ExchangeConfig, QueueConfig
+from .types import ExchangeProducerConfig, QueueConfig
 
 class RabbitmqBasicProducer(RabbitmqProducerBase):
     def __init__(self, queue_config: QueueConfig):
@@ -30,9 +30,9 @@ class RabbitmqBasicProducer(RabbitmqProducerBase):
         )
 
 class RabbitmqExchangeProducer(RabbitmqProducerBase):
-    def __init__(self, exchange_config: ExchangeConfig):
+    def __init__(self, config: ExchangeProducerConfig):
         super().__init__()
-        self.exchange_config = exchange_config
+        self.exchange_config = config.exchange_config
         self.exchange = None
 
     async def init_producer(self):
@@ -42,7 +42,7 @@ class RabbitmqExchangeProducer(RabbitmqProducerBase):
             durable=self.exchange_config.durable,
         )
 
-    async def publish(self, body: str, routing_key: str = "", **kwargs):
+    async def publish(self, body: str, routing_key: str = "", **kwargs) -> ConfirmationFrameType | None:
         if not self.exchange:
             raise ValueError("[RabbitmqExchangeProducer]: Exchange was not declared")
         message = aio_pika.Message(body=body.encode("utf-8")) 

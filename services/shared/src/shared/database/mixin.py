@@ -18,7 +18,7 @@ class BaseModelDatabaseMixin(BaseModel, ABC):
         /,
         *,
         commit: bool = True,
-        return_as_base: bool = False,        
+        return_as_base: bool = False,
     ):
         try:
             result = await cls.model.create(session, data, commit=commit)
@@ -27,7 +27,7 @@ class BaseModelDatabaseMixin(BaseModel, ABC):
 
             if return_as_base:
                 return result
-            
+
             return cls.model_validate(result, from_attributes=True)
         except Exception as e:
             raise e
@@ -52,3 +52,22 @@ class BaseModelDatabaseMixin(BaseModel, ABC):
         if return_as_base:
             return result
         return cls.model_validate(result, from_attributes=True)
+
+    @classmethod
+    async def get_all(
+        cls,
+        session: AsyncSession,
+        /,
+        *,
+        where_clause: list[ColumnElement[bool]] = None,
+        return_as_base: bool = False,
+    ):
+        result: list[Base] = await cls.model.get_all(session, where_clause=where_clause)
+
+        if not result:
+            return None
+
+        if return_as_base:
+            return result
+        
+        return [cls.model_validate(item, from_attributes=True) for item in result]
