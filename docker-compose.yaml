@@ -1,14 +1,4 @@
 services:
-  nginx:
-    image: nginx:latest
-    container_name: nginx
-    ports:
-      - "7070:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-    networks:
-      - fc_network
-
   fc.service.minio:
     image: minio/minio:latest
     container_name: fc.service.minio
