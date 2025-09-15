@@ -12,7 +12,21 @@ class MinioSettings(BaseSettings):
     MINIO_ROOT_USER: str
     MINIO_ROOT_PASSWORD: str
 
-class Settings(RabbitMQSettings, MinioSettings):
+class FileDbSettings(BaseSettings):
+    FILE_PG_DB: str
+    FILE_PG_USER: str
+    FILE_PG_PW: str
+    FILE_PG_PORT: int
+    FILE_PG_HOST: str
+
+class ResendSettings(BaseSettings):
+    EMAIL_SERVICE: str
+    DEV_EMAIL: str
+
+class GatewaySettings(BaseSettings):
+    GATEWAY_API_DOWNLOAD: str
+
+class Settings(RabbitMQSettings, MinioSettings, FileDbSettings, ResendSettings, GatewaySettings):
     pass
 
 settings = Settings()

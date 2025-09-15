@@ -21,18 +21,16 @@ class MinioClient:
             secure=False,  # Set to True for HTTPS
         )
 
-    def get_presigned_url(self, bucket_name: str, file_name: str):
+    def get_presigned_url(self, bucket_name: str, file_name: str, expiration: timedelta):
         try:
             url = self.client.get_presigned_url(
                 method="GET",
                 bucket_name=bucket_name,
                 object_name=file_name,
-                expires=timedelta(hours=1),
+                expires=expiration,
                 response_headers={
                     "Content-Disposition": f'attachment; filename="{file_name}"'
                 },
-                
-                
             )
             return url
         except Exception as e:

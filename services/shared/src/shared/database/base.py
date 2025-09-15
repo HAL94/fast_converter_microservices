@@ -92,12 +92,13 @@ class Base(DeclarativeBase):
 
             return obj
         except IntegrityError as e:
+            print(e)
             await session.rollback()
 
             if e.orig.sqlstate == UniqueViolationError.sqlstate:
                 raise ValueError("Unique Constraint is Violated")
             elif e.orig.sqlstate == ForeignKeyViolationError.sqlstate:
-                raise ValueError("Foreig Key Constraint is violated")
+                raise ValueError("Foreign Key Constraint is violated")
 
             raise e
 

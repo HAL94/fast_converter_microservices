@@ -8,6 +8,7 @@ dependencies = [
     "aio-pika>=9.5.7",
     "pydantic>=2.11.7",
     "pydantic-settings>=2.10.1",
+    "resend>=2.13.1",
     "shared",
 ]
 
