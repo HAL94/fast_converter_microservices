@@ -17,6 +17,7 @@ class Buckets(enum.StrEnum):
 class ExchangeNames(enum.StrEnum):
     VIDEO_UPLOAD = "video_upload"
     CONVERSION = "conversion"
+    NOTIFICATION = "notification"
 
 
 class BindingKeys(enum.StrEnum):
@@ -27,6 +28,7 @@ upload_exchange_config = ExchangeConfig(name=ExchangeNames.VIDEO_UPLOAD)
 convert_completed_exchange_config = ExchangeConfig(
     name=ExchangeNames.CONVERSION, exchange_type=ExchangeType.FANOUT
 )
+notification_exchange_config = ExchangeConfig(name=ExchangeNames.NOTIFICATION, exchange_type=ExchangeType.FANOUT)
 
 
 @dataclass
@@ -35,6 +37,7 @@ class ProducerConfigs:
     ConvertCompleted = ExchangeReceiverConfig(
         exchange_config=convert_completed_exchange_config
     )
+    NotificationSent = ExchangeProducerConfig(exchange_config=notification_exchange_config)
 
 
 @dataclass
@@ -48,4 +51,9 @@ class ReceiverConfigs:
         exchange_config=convert_completed_exchange_config,
         binding_keys="",
         queue_config=QueueConfig(exclusive=True),
+    )
+    NotificationSent = ExchangeReceiverConfig(
+        exchange_config=notification_exchange_config,
+        binding_keys="",
+        queue_config=QueueConfig(exclusive=True)
     )

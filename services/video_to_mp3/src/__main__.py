@@ -41,7 +41,7 @@ producer: RabbitmqExchangeProducer | None = None
 async def setup_exchange_producer():
     global producer
     producer = await create_exchange_producer(ProducerConfigs.ConvertCompleted)
-    await producer.init_producer()
+    
 
 
 async def emit_convert_complete_event(uuid: str):
@@ -82,6 +82,7 @@ async def get_video_by_uuid(uuid: str) -> str | None:
             audio_found = await File.get_one(
                 session, convert_result.audio_name, field=File.model.name
             )
+            print(f"Audio already exist: {audio_found}")
             if not audio_found:
                 audio_found = await File.create(
                     session,
@@ -131,7 +132,7 @@ def convert_video_to_audio(filename: str):
     return AudioConvertResult(audio_name=None, success=False)
 
 
-async def connect_rabbit():
+async def connect_rabbitmq():
     try:
         url = f"amqp://{settings.RABBITMQ_HOST}:{settings.RABBITMQ_PORT}/"
         username = settings.RABBITMQ_USERNAME
@@ -163,7 +164,7 @@ async def main():
         global client
         client = setup_minio_client()
         await connect_database()
-        await connect_rabbit()
+        await connect_rabbitmq()
         await setup_exchange_producer()
         await setup_exchange_receiver()
         print("Conversion Service is running")

@@ -26,14 +26,14 @@ class FastApp(FastAPI):
             password=settings.RABBITMQ_PASSWORD,
         )
 
-    def _connect_s3_storage(self):
-        if client.ensure_connect():
-            print("Minio Client is initialized")
-
     async def _connect_file_database(self):
         engine = session_manager.engine
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+    def _connect_s3_storage(self):
+        if client.ensure_connect():
+            print("Minio Client is initialized")
 
     @asynccontextmanager
     async def _lifespan(self, _: Self, /) -> AsyncGenerator[None, Any]:

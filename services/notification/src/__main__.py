@@ -9,7 +9,12 @@ from shared.rabbitmq.helpers import create_exchange_receiver
 from shared.rabbitmq.receiver import RabbitmqExchangeReceiver
 from shared.minio_client import MinioClient, create_client, create_config
 from shared.database.base import Base
-from shared.file_database.entities import File, FileModel, DownloadLink
+from shared.file_database.entities import (
+    File,
+    FileModel,
+    DownloadLink,
+    DownloadLinkModel,
+)
 from .config import settings
 from .files_database import session_manager
 
@@ -39,19 +44,9 @@ async def connect_files_db():
         await con.run_sync(Base.metadata.create_all)
 
 
+
 async def notify_user(uuid: str):
     expires_after = timedelta(hours=1)
-
-    url = client.get_presigned_url(
-        bucket_name=Buckets.VIDEO_BUCKET,
-        file_name="siberian_husky.mp3",
-        expiration=expires_after,
-    )
-    if not url:
-        print(f"Failed to create pre-signed url for {uuid}")
-        return
-
-    print(f"Generated a presigned url for the file: {uuid}, url: {url}")
 
     async with session_manager.session() as session:
         audio_file: FileModel = await File.get_one(
@@ -60,16 +55,40 @@ async def notify_user(uuid: str):
         if not audio_file:
             raise ValueError("Audio file is not found.. canceling")
             return
-        # audio_file.presigned_url = url
-        await DownloadLink.create(
-            session,
-            DownloadLink(
-                bucket_name=Buckets.VIDEO_BUCKET,
-                presigned_url=url,
-                expires_at=datetime.now() + expires_after,
-                file_id=audio_file.id,
-            ),
+
+        url = client.get_presigned_url(
+            bucket_name=Buckets.VIDEO_BUCKET,
+            file_name=audio_file.name,
+            expiration=expires_after,
         )
+        if not url:
+            print(f"Failed to create pre-signed url for {uuid}")
+            return
+
+        print(f"Generated a presigned url for the file: {uuid}, url: {url}")
+
+        download_link: DownloadLinkModel = await DownloadLink.get_one(
+            session,
+            audio_file.id,
+            field=DownloadLink.model.file_id,
+            return_as_base=True,
+        )
+
+        if not download_link:
+            download_link = await DownloadLink.create(
+                session,
+                DownloadLink(
+                    bucket_name=Buckets.VIDEO_BUCKET,
+                    presigned_url=url,
+                    expires_at=datetime.now() + expires_after,
+                    file_id=audio_file.id,
+                ),
+                return_as_base=True,
+            )
+        else:
+            download_link.presigned_url = url
+            await session.commit()
+        
         resend.api_key = settings.EMAIL_SERVICE
         total_seconds = expires_after.total_seconds()
         hours = int(total_seconds // 3600)
@@ -83,8 +102,6 @@ async def notify_user(uuid: str):
             }
         )
 
-        await session.commit()
-
 
 async def setup_exchange_receiver():
     global receiver
@@ -97,6 +114,7 @@ async def setup_exchange_receiver():
             await notify_user(uuid)
 
     await receiver.consume(callback=callback)
+
 
 
 async def main():

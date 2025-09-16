@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from src.dependencies import get_auth_client, validate_jwt
+from src.dependencies.auth import ValidateJwt, get_auth_client
 from shared.schema import UserLogin
 from src.services.auth import AuthServiceClient
 
@@ -13,6 +13,6 @@ async def login(
     return await auth_client.login(data)
 
 
-@router.get("/protected", dependencies=[Depends(validate_jwt)])
+@router.get("/protected", dependencies=[Depends(ValidateJwt())])
 async def access_protocted():
     return {"success": "From gateway"}

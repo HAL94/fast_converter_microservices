@@ -1,3 +1,3 @@
-from .auth import get_auth_client, validate_jwt
+from .auth import get_auth_client, ValidateJwt
 
-__all__ = [get_auth_client, validate_jwt] 
+__all__ = [get_auth_client, ValidateJwt] 
