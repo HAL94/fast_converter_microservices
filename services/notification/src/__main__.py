@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
+import logging
 import resend
 
 from shared.constants import Buckets, ReceiverConfigs
@@ -20,6 +21,9 @@ from .files_database import session_manager
 
 receiver: RabbitmqExchangeReceiver | None = None
 client: MinioClient | None = None
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def create_minio_client():
@@ -44,7 +48,6 @@ async def connect_files_db():
         await con.run_sync(Base.metadata.create_all)
 
 
-
 async def notify_user(uuid: str):
     expires_after = timedelta(hours=1)
 
@@ -62,10 +65,10 @@ async def notify_user(uuid: str):
             expiration=expires_after,
         )
         if not url:
-            print(f"Failed to create pre-signed url for {uuid}")
+            logger.info(f"Failed to create pre-signed url for {uuid}")
             return
 
-        print(f"Generated a presigned url for the file: {uuid}, url: {url}")
+        logger.info(f"Generated a presigned url for the file: {uuid}, url: {url}")
 
         download_link: DownloadLinkModel = await DownloadLink.get_one(
             session,
@@ -86,9 +89,13 @@ async def notify_user(uuid: str):
                 return_as_base=True,
             )
         else:
+            logger.info(
+                f"Download link object already exist for this file, updating info: {download_link}"
+            )
             download_link.presigned_url = url
+            download_link.expires_at = datetime.now() + expires_after
             await session.commit()
-        
+
         resend.api_key = settings.EMAIL_SERVICE
         total_seconds = expires_after.total_seconds()
         hours = int(total_seconds // 3600)
@@ -114,7 +121,6 @@ async def setup_exchange_receiver():
             await notify_user(uuid)
 
     await receiver.consume(callback=callback)
-
 
 
 async def main():

@@ -1,11 +1,11 @@
-from dataclasses import dataclass
 from datetime import timedelta
 from typing import BinaryIO
 from minio import Minio
+from pydantic import BaseModel
 
 
-@dataclass
-class MinioConfig:
+
+class MinioConnectionConfig(BaseModel):
     host: str
     username: str
     password: str
@@ -13,7 +13,7 @@ class MinioConfig:
 
 class MinioClient:
     def __init__(self, host: str, username: str, password: str):
-        self.config = MinioConfig(host=host, username=username, password=password)
+        self.config = MinioConnectionConfig(host=host, username=username, password=password)
         self.client = Minio(
             host,  # Replace with your MinIO server endpoint
             access_key=username,  # Replace with your access key
@@ -108,8 +108,8 @@ class MinioClient:
 
 
 def create_config(host: str, username: str, password: str):
-    return MinioConfig(host=host, username=username, password=password)
+    return MinioConnectionConfig(host=host, username=username, password=password)
 
 
-def create_client(config: MinioConfig):
+def create_client(config: MinioConnectionConfig):
     return MinioClient(config.host, config.username, config.password)

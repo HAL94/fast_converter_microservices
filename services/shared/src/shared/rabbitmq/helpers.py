@@ -1,8 +1,15 @@
 
 
+from pydantic import BaseModel
 from shared.rabbitmq.producer import RabbitmqExchangeProducer
 from shared.rabbitmq.receiver import RabbitmqExchangeReceiver
 from shared.rabbitmq.types import ExchangeReceiverConfig, ExchangeProducerConfig
+
+class RabbitmqConnectionConfig(BaseModel):
+    host: str
+    port: int
+    username: str
+    password: str
 
 
 async def create_exchange_producer(config: ExchangeProducerConfig):
