@@ -17,6 +17,7 @@ from shared.rabbitmq.helpers import (
 from shared.rabbitmq import IncomingMessage
 from shared.database import Base
 from shared.database.session import SessionManager, create_session_manager
+from shared.file_database.models import *  # noqa: F403
 from shared.file_database.entities import File
 from shared.minio_client import (
     MinioClient,
@@ -62,7 +63,7 @@ class VideoToMp3Service:
                 logger.info("[VideoToMp3 Service]: Minio client created")
             return client
         except Exception as e:
-            logger.error(f"[VideoToMp3 Service]: Failed to setup exchange producer {e}")
+            logger.error(f"[VideoToMp3 Service]: Failed to setup minio client {e}")
             raise e
 
     async def get_video_by_uuid(self, uuid: str) -> str | None:
@@ -151,6 +152,8 @@ class VideoToMp3Service:
             self.client = self._init_minio_client()
             await self._init_rabbitmq()
             await self._start_exchange_producer(config=ProducerConfigs.ConvertCompleted)
+            async with self.session_manager.engine.begin() as con:
+                await con.run_sync(Base.metadata.create_all)
 
             self.service_initialized = True
         except Exception as e:
@@ -198,41 +201,6 @@ DATABASE_URL = URL.create(
     database=settings.FILE_PG_DB,
 )
 
-session_manager = create_session_manager(DATABASE_URL)
-client: MinioClient
-producer: RabbitmqExchangeProducer | None = None
-
-
-async def setup_exchange_producer():
-    global producer
-    producer = await create_exchange_producer(ProducerConfigs.ConvertCompleted)
-
-
-async def emit_convert_complete_event(uuid: str):
-    if not producer:
-        print("Producer for ConversionComplete event is None")
-        return
-
-    is_confirmed = await producer.publish(body=uuid)
-
-    if is_confirmed.delivery_tag:
-        print("[ConversionService]: successfully published the conversion event")
-
-
-def setup_minio_client():
-    minio_config = create_config(
-        settings.MINIO_HOST, settings.MINIO_ROOT_USER, settings.MINIO_ROOT_PASSWORD
-    )
-    client = create_client(minio_config)
-    if client.ensure_connect():
-        print("[VideoToMp3]: Minio client created")
-    return client
-
-
-async def connect_database():
-    async with session_manager.engine.begin() as con:
-        await con.run_sync(Base.metadata.create_all)
-
 
 async def main():
     try:
@@ -263,7 +231,7 @@ async def main():
         await service.init_service()
 
         await service.start_consuming(config=ReceiverConfigs.VideoUpload)
-        logger.info("[VideoToMP3 Service]: Conversion Service is running")
+        logger.info("[VideoToMP3 Service]: is running...")
         await asyncio.Future()
     finally:
         await RabbitmqClient.close()
