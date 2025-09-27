@@ -1,0 +1,316 @@
+{
+	"info": {
+		"_postman_id": "9de10847-379c-48a1-b9bb-d4a0ec5289a5",
+		"name": "FastVideoConverter",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "16057622",
+		"_collection_link": "https://grey-equinox-912343.postman.co/workspace/Playground~6331b935-0bc3-469e-9748-d092020ce3b2/collection/16057622-9de10847-379c-48a1-b9bb-d4a0ec5289a5?action=share&source=collection_link&creator=16057622"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Validate JWT",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJicm93bmllQGRvZS5jb20iLCJleHAiOjE3NTcwNzMzNjR9.JRFKtJ0s4-d9exZBiwWzjzQub39_7gSYL2FZogf7J8w",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{AUTH_URL}}/auth/validate",
+							"host": [
+								"{{AUTH_URL}}"
+							],
+							"path": [
+								"auth",
+								"validate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Me",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJicm93bmllQGRvZS5jb20iLCJleHAiOjE3NTcwNzMzNjR9.JRFKtJ0s4-d9exZBiwWzjzQub39_7gSYL2FZogf7J8w",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{AUTH_URL}}/auth/me",
+							"host": [
+								"{{AUTH_URL}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"brownie@doe.com\",\r\n    \"password\": \"123456\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{AUTH_URL}}/auth/login",
+							"host": [
+								"{{AUTH_URL}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"brownie@doe.com\",\r\n    \"password\": \"123456\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{AUTH_URL}}/auth/register",
+							"host": [
+								"{{AUTH_URL}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Status Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{AUTH_URL}}/health",
+							"host": [
+								"{{AUTH_URL}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Protected",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJicm93bmllQGRvZS5jb20iLCJleHAiOjE3NTcwNzMzNjR9.JRFKtJ0s4-d9exZBiwWzjzQub39_7gSYL2FZogf7J8w",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/protected",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"protected"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Gateway",
+			"item": [
+				{
+					"name": "health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/status",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"brownie@doe.com\",\r\n    \"password\": \"123456\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/auth/login",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Protocted Resource Test",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJicm93bmllQGRvZS5jb20iLCJleHAiOjE3NTcyNDMwODh9._Xxl8d4hegsCdhHJcL59p9wBOXfxoCoUAKwIbr-tM40",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/auth/protected",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"auth",
+								"protected"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload File",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJicm93bmllQGRvZS5jb20iLCJleHAiOjE3NTg5NzQ1MjV9.2zemmu0dZO3SBwTWhCVseQ2woWstJpyiYaun78H10SU",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "video_file",
+									"type": "file",
+									"src": "/C:/Users/Habib/Downloads/smart_pill.mp4"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{GATEWAY_URL}}/upload/",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"upload",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Download File By UUID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJicm93bmllQGRvZS5jb20iLCJleHAiOjE3NTc1OTU2ODJ9.i8g7Zt12PFfmsPiThGXXyAyaJhyv61Wa4ck5y4Pcr2U",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{GATEWAY_URL}}/download/audio/9d13d857-2d49-461a-9b17-153d1a25c948",
+							"host": [
+								"{{GATEWAY_URL}}"
+							],
+							"path": [
+								"download",
+								"audio",
+								"9d13d857-2d49-461a-9b17-153d1a25c948"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

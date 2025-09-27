@@ -5,12 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "moviepy>=2.2.1",
 ]
 
 [tool.uv.workspace]
 members = [ "services/*" ]
 
-[tool.uv.sources]
-auth = { workspace = true }
-gateway = { workspace = true }
